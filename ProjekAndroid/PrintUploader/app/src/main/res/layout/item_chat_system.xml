@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center"
+    android:paddingHorizontal="12dp"
+    android:paddingVertical="8dp">
+
+    <TextView
+        android:id="@+id/tvSystemMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxWidth="300dp"
+        android:lineSpacingExtra="2dp"
+        android:text="Pesan Sistem"
+        android:textAlignment="center"
+        android:textStyle="italic"
+        android:textColor="#8A9A96"
+        android:textSize="14sp" />
+</LinearLayout>

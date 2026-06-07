@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.PrintUploader" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">#215B63</item>
+        <item name="colorPrimaryDark">#12363B</item>
+        <item name="colorAccent">#F59E0B</item>
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:navigationBarColor">#F7F0E3</item>
+    </style>
+</resources>

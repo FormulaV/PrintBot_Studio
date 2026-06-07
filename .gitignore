@@ -1,0 +1,27 @@
+# Android
+.gradle/
+local.properties
+.idea/
+.vscode/
+*.iml
+.kotlin/
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+ENV/
+
+# Project-specific
+print_server/downloads/*
+!print_server/downloads/.gitkeep
+print_server/uploads/*
+!print_server/uploads/.gitkeep

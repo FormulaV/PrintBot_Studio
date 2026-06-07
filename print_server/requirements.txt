@@ -1,0 +1,6 @@
+flask
+PyPDF2
+python-docx
+pywin32
+PyMuPDF
+PyQt5

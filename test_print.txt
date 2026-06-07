@@ -1,0 +1,3 @@
+Printer terhubung dengan baik
+
+Test berhasil.
