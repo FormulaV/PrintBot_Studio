@@ -1,559 +1,385 @@
-# Architecture Diagrams - Mermaid Code
+# Sistem Arsitektur: Android (Kotlin) + Python Backend
 
-Berikut adalah kumpulan diagram arsitektur dalam format Mermaid yang dapat diimpor langsung ke draw.io atau tools Mermaid lainnya.
-
----
-
-## 1. Diagram Arsitektur Lengkap (Main Architecture)
+## 📊 Complete End-to-End System Architecture
 
 ```mermaid
 graph TB
-    User["👤 User"]
-    
-    subgraph Android["📱 ANDROID LAYER<br/>(Kotlin 38.1%)"]
-        Activity["Activity/Fragment"]
-        ViewModel["ViewModel<br/>State Management"]
-        Repository["Repository Pattern"]
-        LocalDB["Room Database<br/>Local Storage"]
-        Adapter["Adapter<br/>UI Controller"]
+    subgraph User["👤 USER LAYER"]
+        EndUser["End User<br/>Using Mobile App"]
     end
     
-    subgraph NetworkLayer["🌐 NETWORK LAYER"]
-        Retrofit["Retrofit<br/>HTTP Client"]
-        OkHttp["OkHttp<br/>Interceptor"]
+    subgraph Android["📱 ANDROID APPLICATION<br/>(Kotlin 38.1%)"]
+        subgraph UI["UI Layer"]
+            LoginScreen["Login Screen"]
+            HomeScreen["Home Screen"]
+            DetailScreen["Detail Screen"]
+        end
+        
+        subgraph VM["State Management Layer"]
+            AuthVM["AuthViewModel"]
+            HomeVM["HomeViewModel"]
+            DetailVM["DetailViewModel"]
+        end
+        
+        subgraph Data["Data Layer"]
+            Repository["Repository<br/>Data Abstraction"]
+            LocalCache["Local Database<br/>Room SQLite"]
+        end
+        
+        subgraph Network["Network Layer"]
+            RetrofitClient["Retrofit<br/>HTTP Client"]
+            Interceptor["Interceptor<br/>Token Injection"]
+        end
     end
     
-    subgraph Backend["⚙️ BACKEND<br/>(Python 59.5%)"]
-        Router["Flask Router<br/>API Endpoints"]
-        AuthMiddleware["Auth Middleware<br/>JWT Validation"]
-        Controller["Controller<br/>Request Handler"]
-        Service["Business Logic<br/>Service Layer"]
-        BackendDB[(Database<br/>PostgreSQL)]
+    subgraph Internet["🌐 INTERNET"]
+        HTTPS["HTTPS/TLS<br/>Encrypted Channel"]
     end
     
-    subgraph Native["⚡ NATIVE LAYER<br/>(C++ 2.4%)"]
-        JNI["JNI Bridge"]
-        CPPCode["C++ Algorithm<br/>Performance Tasks"]
+    subgraph Backend["⚙️ PYTHON BACKEND<br/>(Flask/FastAPI 59.5%)"]
+        subgraph API["API Layer"]
+            AuthEndpoint["/auth/login<br/>POST /api/data<br/>GET /api/detail"]
+            RouteHandler["Route Handler<br/>@app.route()"]
+        end
+        
+        subgraph Security["Security Layer"]
+            CORSHandler["CORS Handler"]
+            JWTValidator["JWT Token<br/>Validator"]
+            InputValidator["Input Validator<br/>Sanitization"]
+        end
+        
+        subgraph Business["Business Logic Layer"]
+            AuthService["Auth Service<br/>Login, Register"]
+            DataService["Data Service<br/>CRUD Operations"]
+            DetailService["Detail Service<br/>Data Processing"]
+        end
+        
+        subgraph DatabaseLayer["Database Layer"]
+            PostgreSQL[("PostgreSQL<br/>Primary Database")]
+            RedisCache[("Redis<br/>Cache")]
+        end
     end
     
-    User -->|Input Action| Activity
-    Activity --> Adapter
-    Adapter --> ViewModel
-    ViewModel -->|Update State| Activity
-    ViewModel -->|Data Request| Repository
-    Repository -->|Cache Check| LocalDB
-    Repository -->|HTTP Request| Retrofit
-    Retrofit --> OkHttp
-    OkHttp -->|POST/GET| Router
+    subgraph Native["⚡ NATIVE CODE<br/>(C++ 2.4%)"]
+        CPPModule["C++ Algorithm<br/>for Performance<br/>Tasks"]
+    end
     
-    Router --> AuthMiddleware
-    AuthMiddleware -->|Valid Token| Controller
-    Controller --> Service
-    Service -->|Query/Store| BackendDB
-    Service -.->|Response| Controller
-    Controller -.->|JSON Response| OkHttp
-    OkHttp -.->|Response| Retrofit
-    Retrofit -->|Parse JSON| Repository
-    Repository -->|Cache Store| LocalDB
-    Repository -.->|Data| ViewModel
+    %% User Interaction Flow
+    EndUser -->|Opens App| LoginScreen
+    LoginScreen -->|Input Email/Password| AuthVM
     
-    ViewModel -->|Performance Task| JNI
-    JNI --> CPPCode
-    CPPCode -.->|Result| JNI
-    JNI -.->|Result| ViewModel
+    %% Authentication Flow
+    AuthVM -->|Validate Input| Repository
+    Repository -->|Check Local Cache| LocalCache
+    LocalCache -->|No Token Found| RetrofitClient
+    RetrofitClient -->|Add Auth Header| Interceptor
+    Interceptor -->|POST /auth/login| HTTPS
+    HTTPS -->|Forward Request| AuthEndpoint
+    AuthEndpoint -->|Route to Handler| RouteHandler
+    RouteHandler -->|Check CORS| CORSHandler
+    CORSHandler -->|Forward Request| InputValidator
+    InputValidator -->|Sanitize Input| AuthService
+    AuthService -->|Query User| PostgreSQL
+    PostgreSQL -->|Return User Data| AuthService
+    AuthService -->|Generate JWT Token| JWTValidator
+    JWTValidator -->|Return Token| RouteHandler
+    RouteHandler -->|JSON Response| HTTPS
+    HTTPS -->|Return to Client| RetrofitClient
+    RetrofitClient -->|Parse JWT| Interceptor
+    Interceptor -->|Save Token| LocalCache
+    Repository -->|Update UI State| AuthVM
+    AuthVM -->|Navigate to Home| HomeScreen
     
-    style Android fill:#4CAF50,stroke:#2E7D32,stroke-width:3px,color:#fff
-    style NetworkLayer fill:#FF9800,stroke:#E65100,stroke-width:2px,color:#fff
-    style Backend fill:#2196F3,stroke:#1565C0,stroke-width:3px,color:#fff
-    style Native fill:#9C27B0,stroke:#6A1B9A,stroke-width:3px,color:#fff
+    %% Data Fetching Flow
+    HomeScreen -->|User Views List| HomeVM
+    HomeVM -->|Request Data| Repository
+    Repository -->|Check Cache First| LocalCache
+    LocalCache -->|Cache Expired| RetrofitClient
+    RetrofitClient -->|Add JWT Token| Interceptor
+    Interceptor -->|GET /api/data| HTTPS
+    HTTPS -->|Receive Request| AuthEndpoint
+    AuthEndpoint -->|Route| RouteHandler
+    RouteHandler -->|Validate Token| JWTValidator
+    JWTValidator -->|Token Valid| DataService
+    DataService -->|Complex Logic| CPPModule
+    CPPModule -->|Process Data| DataService
+    DataService -->|Query Data| PostgreSQL
+    PostgreSQL -->|Fetch from Cache| RedisCache
+    RedisCache -->|Return| PostgreSQL
+    PostgreSQL -->|Return Data| DataService
+    DataService -->|Format Response| RouteHandler
+    RouteHandler -->|JSON Response| HTTPS
+    HTTPS -->|Return to Client| RetrofitClient
+    RetrofitClient -->|Parse Data| Repository
+    Repository -->|Store in Cache| LocalCache
+    Repository -->|Update State| HomeVM
+    HomeVM -->|Render List| HomeScreen
+    
+    %% Detail View Flow
+    HomeScreen -->|User Clicks Item| DetailScreen
+    DetailScreen -->|Load Detail| DetailVM
+    DetailVM -->|Request Specific Data| Repository
+    Repository -->|Check Local Cache| LocalCache
+    LocalCache -->|Cache Hit| Repository
+    Repository -->|Return Cached Data| DetailVM
+    DetailVM -->|Display Detail| DetailScreen
+    
+    %% Styling
     style User fill:#F44336,stroke:#C62828,stroke-width:2px,color:#fff
-    style Repository fill:#66BB6A,stroke:#2E7D32,color:#fff
-    style Service fill:#64B5F6,stroke:#1565C0,color:#fff
+    style Android fill:#4CAF50,stroke:#2E7D32,stroke-width:3px,color:#fff
+    style UI fill:#81C784,color:#fff
+    style VM fill:#66BB6A,color:#fff
+    style Data fill:#4CAF50,color:#fff
+    style Network fill:#FF9800,stroke:#E65100,stroke-width:2px,color:#fff
+    style Internet fill:#FFB74D,stroke:#E65100,stroke-width:2px,color:#000
+    style Backend fill:#2196F3,stroke:#1565C0,stroke-width:3px,color:#fff
+    style API fill:#64B5F6,color:#fff
+    style Security fill:#F44336,stroke:#C62828,color:#fff
+    style Business fill:#42A5F5,color:#fff
+    style DatabaseLayer fill:#1565C0,color:#fff
+    style Native fill:#9C27B0,stroke:#6A1B9A,stroke-width:2px,color:#fff
+    style HTTPS fill:#FFC107,stroke:#F57F17,stroke-width:2px,color:#000
 ```
 
 ---
 
-## 2. Detailed Component Architecture
+## 🔄 Alur Proses Lengkap: Login → Home → Detail
 
-```mermaid
-graph TB
-    subgraph Presentation["📱 PRESENTATION LAYER"]
-        Activity["Activity<br/>Screen Controller"]
-        Fragment["Fragment<br/>Reusable UI"]
-        Dialog["Dialog<br/>Popups"]
-    end
-    
-    subgraph StateManagement["🔄 STATE MANAGEMENT"]
-        ViewModel["ViewModel<br/>Lifecycle Aware"]
-        LiveData["LiveData/StateFlow<br/>Observable Data"]
-        Binding["Data Binding<br/>Auto UI Update"]
-    end
-    
-    subgraph DataLayer["💾 DATA LAYER"]
-        Repository["Repository<br/>Data Abstraction"]
-        LocalData["Local Database<br/>Room/SQLite"]
-        Cache["Cache Manager<br/>Preference"]
-    end
-    
-    subgraph Network["🌐 NETWORK"]
-        Retrofit["Retrofit<br/>REST Client"]
-        Interceptor["Interceptor<br/>Request/Response"]
-    end
-    
-    subgraph Models["📦 DATA MODELS"]
-        Entity["Entity<br/>DB Model"]
-        DTO["DTO<br/>API Model"]
-        Domain["Domain Model<br/>Business Logic"]
-    end
-    
-    Presentation --> StateManagement
-    StateManagement --> DataLayer
-    DataLayer --> LocalData
-    DataLayer --> Network
-    Network --> Interceptor
-    Interceptor --> Retrofit
-    
-    Presentation --> Models
-    DataLayer --> Models
-    
-    style Presentation fill:#4CAF50,stroke:#2E7D32,color:#fff
-    style StateManagement fill:#81C784,stroke:#2E7D32,color:#fff
-    style DataLayer fill:#66BB6A,stroke:#2E7D32,color:#fff
-    style Network fill:#FF9800,stroke:#E65100,color:#fff
-    style Models fill:#FFC107,stroke:#F57F17,color:#000
+### **FASE 1: INITIALIZATION**
+```
+User Opens App
+    ↓
+Check Local Token
+    ├─ Token Valid → Go to Home Screen
+    └─ Token Expired/None → Go to Login Screen
+```
+
+### **FASE 2: AUTHENTICATION (Login)**
+```
+1. User Input Email & Password
+   ↓
+2. AuthViewModel Validate Input
+   ↓
+3. Repository Check Local Cache (Token)
+   ↓
+4. Retrofit POST /auth/login dengan credentials
+   ↓
+5. Interceptor Tambah Headers (HTTPS)
+   ↓
+6. Backend Auth Service:
+   - Validate Email/Password
+   - Query Database User
+   - Check Password Hash
+   ↓
+7. Generate JWT Token
+   ↓
+8. Return Token ke Android
+   ↓
+9. Save Token di SharedPreferences
+   ↓
+10. Navigate to Home Screen
+```
+
+### **FASE 3: DATA FETCHING (Home Screen)**
+```
+1. User Navigate ke Home
+   ↓
+2. HomeViewModel Request Data
+   ↓
+3. Repository Check Local Cache
+   ├─ Hit → Return Cached Data (Fast) → Display
+   └─ Miss → Continue to Network Request
+   ↓
+4. Retrofit GET /api/data dengan JWT Token
+   ↓
+5. Backend Service:
+   - JWT Token Validation ✓
+   - Input Sanitization ✓
+   - Business Logic Processing
+   - Call C++ Module for Heavy Computation
+   - Query PostgreSQL Database
+   - Check Redis Cache Layer
+   ↓
+6. Format Response (JSON)
+   ↓
+7. Return ke Android
+   ↓
+8. Repository Store di Local Database
+   ↓
+9. ViewModel Update State (LiveData)
+   ↓
+10. RecyclerView Render List UI
+```
+
+### **FASE 4: DETAIL VIEW (Detail Screen)**
+```
+1. User Click Item di List
+   ↓
+2. DetailViewModel Request Data
+   ↓
+3. Repository Check Local Cache
+   ├─ Available → Return Immediately
+   └─ Not Available → Network Request
+   ↓
+4. Display Detail Information
+   ↓
+5. Optional: Real-time Updates via WebSocket
 ```
 
 ---
 
-## 3. Backend Architecture (Python)
-
-```mermaid
-graph TB
-    Client["🔹 Client Request<br/>from Android"]
-    
-    subgraph Server["⚙️ SERVER LAYER"]
-        Endpoint["Flask Routes<br/>@app.route()"]
-        Blueprint["Blueprint<br/>Modular Routes"]
-    end
-    
-    subgraph Middleware["🔐 MIDDLEWARE"]
-        CORS["CORS Handler"]
-        Auth["Authentication<br/>JWT Token Check"]
-        Validation["Request Validation"]
-    end
-    
-    subgraph BusinessLogic["💼 BUSINESS LOGIC"]
-        UserService["User Service<br/>User Management"]
-        ProductService["Product Service<br/>Product Management"]
-        OrderService["Order Service<br/>Order Processing"]
-        PaymentService["Payment Service<br/>Payment Processing"]
-    end
-    
-    subgraph Repository["📊 DATA ACCESS"]
-        UserRepo["User Repository"]
-        ProductRepo["Product Repository"]
-        OrderRepo["Order Repository"]
-    end
-    
-    subgraph Database["🗄️ DATABASE"]
-        PostgreSQL[("PostgreSQL<br/>Primary DB")]
-        Cache[("Redis<br/>Cache Layer")]
-    end
-    
-    Client --> Endpoint
-    Endpoint --> Blueprint
-    Blueprint --> CORS
-    CORS --> Auth
-    Auth --> Validation
-    
-    Validation --> UserService
-    Validation --> ProductService
-    Validation --> OrderService
-    Validation --> PaymentService
-    
-    UserService --> UserRepo
-    ProductService --> ProductRepo
-    OrderService --> OrderRepo
-    
-    UserRepo --> PostgreSQL
-    ProductRepo --> PostgreSQL
-    OrderRepo --> PostgreSQL
-    
-    UserService -.->|Cache| Cache
-    ProductService -.->|Cache| Cache
-    OrderService -.->|Cache| Cache
-    
-    style Server fill:#2196F3,stroke:#1565C0,color:#fff
-    style Middleware fill:#F44336,stroke:#C62828,color:#fff
-    style BusinessLogic fill:#4CAF50,stroke:#2E7D32,color:#fff
-    style Repository fill:#FF9800,stroke:#E65100,color:#fff
-    style Database fill:#9C27B0,stroke:#6A1B9A,color:#fff
-    style Client fill:#FFC107,stroke:#F57F17,color:#000
-```
-
----
-
-## 4. Data Flow - Complete Request Cycle
+## 📈 Request Flow Diagram
 
 ```mermaid
 sequenceDiagram
     participant User as 👤 User
-    participant App as 📱 Android<br/>App
-    participant Repository as 📊 Repository
-    participant LocalDB as 💾 Local DB
-    participant Retrofit as 🌐 Retrofit
+    participant Android as 📱 Android App
+    participant Cache as 💾 Local Cache
+    participant Network as 🌐 Network
     participant Backend as ⚙️ Backend
-    participant MainDB as 🗄️ Database
+    participant DB as 🗄️ Database
     
-    User->>App: Click Button
-    App->>Repository: requestData()
-    Repository->>LocalDB: checkCache()
+    User->>Android: 1. Click Login Button
+    activate Android
+    Android->>Cache: 2. Check Token
+    deactivate Android
     
-    alt Cache Available
-        LocalDB-->>Repository: Return Cached Data
-        Repository-->>App: Data from Cache
-        App-->>User: Display Data ✓
-    else Cache Expired/Empty
-        Repository->>Retrofit: HTTP GET /api/data
-        Retrofit->>Backend: Forward Request
-        Backend->>MainDB: Query Data
-        MainDB-->>Backend: Return Result
-        Backend-->>Retrofit: JSON Response
-        Retrofit-->>Repository: Parse Response
-        Repository->>LocalDB: Store in Cache
-        Repository-->>App: Return Data
-        App-->>User: Display Data ✓
+    alt Token Exists
+        Cache-->>Android: Return Token
+        Android->>User: ✓ Go to Home
+    else Token Not Found
+        activate Android
+        Android->>Network: 3. POST /auth/login
+        activate Network
+        Network->>Backend: 4. Forward Request
+        activate Backend
+        Backend->>DB: 5. Query User
+        DB-->>Backend: Return User Data
+        Backend->>Backend: 6. Generate JWT
+        Backend-->>Network: 7. JWT Token
+        deactivate Backend
+        Network-->>Android: 8. Token Response
+        deactivate Network
+        Android->>Cache: 9. Save Token
+        Android->>User: ✓ Go to Home
+        deactivate Android
     end
+    
+    Note over User,DB: FASE 2: HOME SCREEN LOAD
+    
+    User->>Android: 10. View Home Screen
+    activate Android
+    Android->>Cache: 11. Check Cache
+    
+    alt Cache Hit
+        Cache-->>Android: Return Data
+        Android->>User: ✓ Display Immediately
+    else Cache Miss
+        Android->>Network: 12. GET /api/data
+        activate Network
+        Network->>Backend: 13. Forward + JWT
+        activate Backend
+        Backend->>Backend: 14. Validate Token ✓
+        Backend->>Backend: 15. Business Logic
+        Backend->>DB: 16. Query Data
+        DB-->>Backend: Return Data
+        Backend-->>Network: 17. JSON Response
+        deactivate Backend
+        Network-->>Android: 18. Data
+        deactivate Network
+        Android->>Cache: 19. Store Cache
+        Android->>User: ✓ Display
+    end
+    deactivate Android
 ```
 
 ---
 
-## 5. MVC/MVVM Pattern Flow
+## 🔐 Security Implementation
 
-```mermaid
-graph LR
-    subgraph MVVM["MVVM PATTERN"]
-        View["View<br/>Activity/Fragment"]
-        ViewModel["ViewModel<br/>UI Logic"]
-        Model["Model<br/>Data & Logic"]
-    end
-    
-    subgraph Binding["Data Binding"]
-        LiveData["LiveData<br/>Observable"]
-        StateFlow["StateFlow<br/>Coroutine"]
-    end
-    
-    User["👤 User Input"]
-    UI["📱 UI Update"]
-    
-    User -->|User Action| View
-    View -->|Observe State| Binding
-    Binding -->|Update| View
-    View -->|Request| ViewModel
-    ViewModel -->|Process| Model
-    Model -->|State Change| ViewModel
-    ViewModel -->|Update| LiveData
-    LiveData -->|Emit| View
-    View -->|Render| UI
-    
-    style View fill:#4CAF50,stroke:#2E7D32,color:#fff
-    style ViewModel fill:#81C784,stroke:#2E7D32,color:#fff
-    style Model fill:#66BB6A,stroke:#2E7D32,color:#fff
-    style Binding fill:#FFC107,stroke:#F57F17,color:#000
+```
+User Input (Android)
+    ↓
+Frontend Validation
+    ↓
+Encrypt with HTTPS/TLS
+    ↓
+Backend Receives
+    ↓
+CORS Validation ✓
+    ↓
+Input Sanitization & Validation ✓
+    ↓
+JWT Token Verification ✓
+    ↓
+Rate Limiting ✓
+    ↓
+SQL Injection Prevention (ORM) ✓
+    ↓
+Database Operation
+    ↓
+Encrypt Response
+    ↓
+Send to Android
+    ↓
+Decrypt & Store Securely
 ```
 
 ---
 
-## 6. Native Code Integration (C++ with JNI)
+## 📊 Key Components Communication
 
-```mermaid
-graph TB
-    subgraph Kotlin["Kotlin Code"]
-        KotlinClass["Kotlin Class<br/>loadLibrary()"]
-        NativeMethod["Native Method<br/>@ExperimentalForeignApi"]
-    end
-    
-    subgraph JNI["JNI BRIDGE"]
-        JNILoader["JNI Loader<br/>System.loadLibrary"]
-        JNIBinding["JNI Binding<br/>native interface"]
-    end
-    
-    subgraph Native["C++ Code"]
-        CPPHeader["Header File<br/>jni.h"]
-        CPPImpl["Implementation<br/>Algorithm"]
-        CPPNative["Native Function<br/>JNIEXPORT"]
-    end
-    
-    subgraph HardwareAccess["Hardware & Resources"]
-        CPU["CPU"]
-        Memory["Memory"]
-        Storage["Storage"]
-    end
-    
-    KotlinClass -->|load| JNILoader
-    KotlinClass -->|call| NativeMethod
-    NativeMethod --> JNIBinding
-    JNIBinding -->|invoke| CPPNative
-    CPPNative -->|access| CPPImpl
-    CPPImpl -->|include| CPPHeader
-    CPPImpl -->|optimize| HardwareAccess
-    
-    style Kotlin fill:#4CAF50,stroke:#2E7D32,color:#fff
-    style JNI fill:#9C27B0,stroke:#6A1B9A,color:#fff
-    style Native fill:#9C27B0,stroke:#6A1B9A,color:#fff
-    style HardwareAccess fill:#424242,stroke:#000,color:#fff
+| Android Component | ↔️ | Backend Component | Purpose |
+|------------------|-----|------------------|---------|
+| LoginScreen | POST | /auth/login | Authentication |
+| HomeScreen | GET | /api/data | Fetch List Data |
+| DetailScreen | GET | /api/detail/{id} | Fetch Detail Data |
+| Repository | - | Services | Business Logic |
+| LocalDatabase | - | PostgreSQL | Data Persistence |
+| ViewModel | - | - | State Management |
+| - | - | JWTValidator | Security Check |
+| - | - | CPPModule | Performance Tasks |
+
+---
+
+## 🎯 Performance Optimizations
+
+1. **Caching Strategy**
+   - Local Cache untuk data yang jarang berubah
+   - Redis Cache di backend untuk query intensive
+   - LRU Cache untuk memory optimization
+
+2. **Network Optimization**
+   - HTTP/2 Multiplexing
+   - GZIP Compression
+   - Request Batching
+
+3. **Database Optimization**
+   - Indexed Queries
+   - Connection Pooling
+   - Lazy Loading
+
+4. **Native Code**
+   - C++ untuk komputasi heavy
+   - JNI Bridge untuk integrasi
+
+---
+
+## ✅ Error Handling & Retry Strategy
+
+```
+Request Sent
+    ↓
+Check Response Status
+    ├─ 200 OK → Success ✓
+    ├─ 401 Unauthorized → Refresh Token → Retry
+    ├─ 5xx Server Error → Retry (Exponential Backoff)
+    ├─ Network Error → Store Queue → Retry Later
+    └─ Invalid Input → Show Error to User
 ```
 
 ---
 
-## 7. Authentication & Security Flow
-
-```mermaid
-graph TB
-    subgraph Client["📱 Client"]
-        Login["Login Screen"]
-        SharedPref["SharedPreferences<br/>Token Storage"]
-    end
-    
-    subgraph Network["🌐 Network"]
-        HTTPClient["HTTP Client<br/>Encrypted"]
-        Certificate["SSL/TLS<br/>Certificate"]
-    end
-    
-    subgraph Backend["⚙️ Backend"]
-        AuthService["Auth Service"]
-        JWTHandler["JWT Handler<br/>Token Generation"]
-    end
-    
-    subgraph Database["🗄️ Database"]
-        UserTable["User Table"]
-    end
-    
-    Login -->|username/password| HTTPClient
-    HTTPClient -->|HTTPS| Certificate
-    Certificate -->|Secure| AuthService
-    AuthService -->|Validate| UserTable
-    UserTable -->|Found| JWTHandler
-    JWTHandler -->|Generate Token| AuthService
-    AuthService -->|Return Token| HTTPClient
-    HTTPClient -->|Encrypted| SharedPref
-    SharedPref -->|Store| Login
-    
-    style Client fill:#4CAF50,stroke:#2E7D32,color:#fff
-    style Network fill:#FF9800,stroke:#E65100,color:#fff
-    style Backend fill:#2196F3,stroke:#1565C0,color:#fff
-    style Database fill:#9C27B0,stroke:#6A1B9A,color:#fff
+Terakhir diperbarui: 2026-06-07
+Diagram format: Mermaid (Compatible dengan draw.io)
 ```
-
----
-
-## 8. Database Schema Relationship
-
-```mermaid
-erDiagram
-    USER ||--o{ ORDER : places
-    USER ||--o{ PROFILE : has
-    PRODUCT ||--o{ ORDER_ITEM : "is in"
-    ORDER ||--o{ ORDER_ITEM : contains
-    PRODUCT ||--o{ CATEGORY : "belongs to"
-    
-    USER {
-        int id PK
-        string email UK
-        string password
-        string phone
-        datetime created_at
-        datetime updated_at
-    }
-    
-    PROFILE {
-        int id PK
-        int user_id FK
-        string full_name
-        string avatar_url
-        string address
-    }
-    
-    PRODUCT {
-        int id PK
-        string name
-        string description
-        decimal price
-        int stock
-        int category_id FK
-    }
-    
-    CATEGORY {
-        int id PK
-        string name
-        string slug
-    }
-    
-    ORDER {
-        int id PK
-        int user_id FK
-        decimal total_price
-        string status
-        datetime order_date
-    }
-    
-    ORDER_ITEM {
-        int id PK
-        int order_id FK
-        int product_id FK
-        int quantity
-        decimal price
-    }
-```
-
----
-
-## 9. Deployment Architecture
-
-```mermaid
-graph TB
-    subgraph Development["🔧 DEVELOPMENT"]
-        IDE["IDE<br/>Android Studio"]
-        Emulator["Emulator<br/>Test Device"]
-    end
-    
-    subgraph Testing["✅ TESTING"]
-        UnitTest["Unit Tests<br/>JUnit"]
-        UITest["UI Tests<br/>Espresso"]
-        IntegrationTest["Integration Tests"]
-    end
-    
-    subgraph CI_CD["🚀 CI/CD PIPELINE"]
-        GitHub["GitHub Actions<br/>Auto Build"]
-        Build["Build APK/AAB"]
-    end
-    
-    subgraph Distribution["📦 DISTRIBUTION"]
-        PlayStore["Google Play Store"]
-        InternalTesting["Internal Testing"]
-    end
-    
-    subgraph Production["🌍 PRODUCTION"]
-        Server["Backend Server<br/>AWS/Heroku"]
-        Database["Database<br/>PostgreSQL"]
-        CDN["CDN<br/>Static Files"]
-    end
-    
-    IDE --> Emulator
-    Emulator --> Testing
-    Testing --> CI_CD
-    CI_CD --> Build
-    Build --> Distribution
-    Distribution -->|Production Build| PlayStore
-    Distribution -->|Beta Build| InternalTesting
-    PlayStore -->|Install| Production
-    InternalTesting -.->|Feedback| Development
-    
-    style Development fill:#4CAF50,stroke:#2E7D32,color:#fff
-    style Testing fill:#2196F3,stroke:#1565C0,color:#fff
-    style CI_CD fill:#FF9800,stroke:#E65100,color:#fff
-    style Distribution fill:#9C27B0,stroke:#6A1B9A,color:#fff
-    style Production fill:#F44336,stroke:#C62828,color:#fff
-```
-
----
-
-## 10. Folder Structure as Architecture
-
-```mermaid
-graph TB
-    Root["AplikasiSkripsi/"]
-    
-    subgraph AndroidProject["📱 android/"]
-        App["app/"]
-        Build["build.gradle<br/>Dependencies"]
-    end
-    
-    subgraph AndroidSrc["app/src/main/"]
-        Java["java/"]
-        Res["res/"]
-        Manifest["AndroidManifest.xml"]
-    end
-    
-    subgraph JavaStructure["java/com/app/"]
-        Activities["activities/"]
-        Fragments["fragments/"]
-        ViewModels["viewmodels/"]
-        Repositories["repositories/"]
-        Models["models/"]
-        Services["services/"]
-        Utils["utils/"]
-        DB["database/"]
-        API["api/"]
-    end
-    
-    subgraph Backend["⚙️ python_backend/"]
-        AppFolder["app/"]
-        Venv["venv/"]
-        Requirements["requirements.txt"]
-    end
-    
-    subgraph BackendStructure["app/"]
-        Models["models/"]
-        Routes["routes/"]
-        Services["services/"]
-        Config["config.py"]
-    end
-    
-    subgraph CPP["🔧 cpp_native/"]
-        Src["src/"]
-        Include["include/"]
-        CMake["CMakeLists.txt"]
-    end
-    
-    subgraph Docs["📚 docs/"]
-        Architecture["ARCHITECTURE.md"]
-        API["API.md"]
-        Setup["SETUP.md"]
-    end
-    
-    Root --> AndroidProject
-    Root --> Backend
-    Root --> CPP
-    Root --> Docs
-    
-    AndroidProject --> App
-    AndroidProject --> Build
-    App --> AndroidSrc
-    AndroidSrc --> Java
-    AndroidSrc --> Res
-    Java --> JavaStructure
-    
-    Backend --> AppFolder
-    Backend --> Requirements
-    AppFolder --> BackendStructure
-    
-    CPP --> Src
-    CPP --> Include
-    
-    style Root fill:#FFC107,stroke:#F57F17,color:#000,stroke-width:3px
-    style AndroidProject fill:#4CAF50,stroke:#2E7D32,color:#fff
-    style Backend fill:#2196F3,stroke:#1565C0,color:#fff
-    style CPP fill:#9C27B0,stroke:#6A1B9A,color:#fff
-    style Docs fill:#424242,stroke:#000,color:#fff
-```
-
----
-
-## Cara Menggunakan Diagram di draw.io:
-
-1. **Buka draw.io** → https://draw.io
-2. **Klik File** → **New** → **Blank Diagram**
-3. **Klik File** → **Import from** → **Paste URL or Code**
-4. **Copy-paste salah satu kode Mermaid di atas**
-5. **Klik Import** - Diagram akan otomatis terbentuk
-6. **Edit dan customize** sesuai kebutuhan
-
----
-
-**Tips:**
-- ✅ Setiap diagram dapat di-zoom dan diedit
-- ✅ Bisa diexport sebagai PNG, SVG, PDF
-- ✅ Gunakan untuk dokumentasi atau presentasi
-- ✅ Share dengan team untuk review
-
