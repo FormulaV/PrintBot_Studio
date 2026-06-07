@@ -38,24 +38,24 @@ graph TB
     end
     
     subgraph PythonBackend["⚙️ PYTHON BACKEND<br/>(Flask 59.5%)"]
-        subgraph AppStructure["APP LAYER (app.py)"]
-            FlaskApp["Flask Application<br/>@app.route()"]
-            FileUpload["/upload<br/>PDF Upload Endpoint"]
-            StateManagement["/api/state<br/>State Management"]
-            PrinterAPI["/api/printers<br/>Printer Detection"]
+        subgraph AppStructure["APP LAYER app.py"]
+            FlaskApp["Flask Application<br/>at app.route"]
+            FileUpload["slash upload<br/>PDF Upload Endpoint"]
+            StateManagement["slash api slash state<br/>State Management"]
+            PrinterAPI["slash api slash printers<br/>Printer Detection"]
         end
         
         subgraph ChatBot["🤖 CHATBOT ENGINE"]
-            ChatBot["Chatbot RNN Model<br/>chatbot_rnn_model.h5"]
+            ChatBotModel["Chatbot RNN Model<br/>chatbot_rnn_model.h5"]
             Tokenizer["Tokenizer<br/>tokenizer.pickle"]
             Classes["Classes<br/>classes.pickle"]
-            ChatEndpoint["/api/chat<br/>Message Processing"]
+            ChatEndpoint["slash api slash chat<br/>Message Processing"]
         end
         
         subgraph DataStorage["💾 DATA STORAGE"]
-            DatabaseJson["database.json<br/>Local State Store<br/>- files: []<br/>- print_jobs: []"]
-            UploadsDir["uploads/<br/>Received Files"]
-            DownloadsDir["downloads/<br/>Generated Files"]
+            DatabaseJson["database.json<br/>Local State Store<br/>files: list<br/>print_jobs: list"]
+            UploadsDir["uploads folder<br/>Received Files"]
+            DownloadsDir["downloads folder<br/>Generated Files"]
         end
         
         subgraph FileProcessing["📄 FILE PROCESSING"]
@@ -64,7 +64,7 @@ graph TB
             PyMuPDF["PyMuPDF<br/>PDF Metadata"]
         end
         
-        subgraph DesktopQT["🖥️ DESKTOP APP<br/>(PyQt5 GUI)"]
+        subgraph DesktopQT["🖥️ DESKTOP APP<br/>PyQt5 GUI"]
             QtWindow["Desktop App Qt<br/>desktop_app_qt.py"]
             Printer["System Printer API<br/>pywin32"]
             PrintExecution["Print Queue<br/>Execution Engine"]
@@ -76,114 +76,101 @@ graph TB
         DatasetChatbot["dataset_chatbot.json<br/>Training Data"]
     end
     
-    %% Android User Flow - Print Module
-    AndroidUser -->|1. Open App| MainActivity
-    MainActivity -->|2. Select Print| PrintActivity
-    AndroidUser -->|3. Pick PDF| FilePicker
-    FilePicker -->|4. Load PDF| PdfRenderer
-    PdfRenderer -->|5. Display Preview| PrintActivity
-    AndroidUser -->|6. Configure<br/>Range, Copies, Color| PrintActivity
-    PrintActivity -->|7. Upload PDF| ApiService
+    AndroidUser -->|Open App| MainActivity
+    MainActivity -->|Select Print| PrintActivity
+    AndroidUser -->|Pick PDF| FilePicker
+    FilePicker -->|Load PDF| PdfRenderer
+    PdfRenderer -->|Display Preview| PrintActivity
+    AndroidUser -->|Configure<br/>Range, Copies, Color| PrintActivity
+    PrintActivity -->|Upload PDF| ApiService
     
-    %% Android to Backend - File Upload
-    ApiService -->|8. POST /upload<br/>MultipartBody| HTTPClient
-    HTTPClient -->|9. HTTP Request| FileUpload
-    FileUpload -->|10. Save File| UploadsDir
-    FileUpload -->|11. Process PDF<br/>PyPDF2, PyMuPDF| FileProcessing
-    FileProcessing -->|12. Extract Metadata<br/>Pages, Size, Format| DatabaseJson
-    FileUpload -->|13. JSON Response| HTTPClient
-    HTTPClient -->|14. UploadResponse| ApiService
-    PrintActivity -->|15. Display File Info<br/>Name, Size, Pages| PrintActivity
+    ApiService -->|POST slash upload| HTTPClient
+    HTTPClient -->|HTTP Request| FileUpload
+    FileUpload -->|Save File| UploadsDir
+    FileUpload -->|Process PDF| FileProcessing
+    FileProcessing -->|Extract Metadata<br/>Pages, Size, Format| DatabaseJson
+    FileUpload -->|JSON Response| HTTPClient
+    HTTPClient -->|UploadResponse| ApiService
+    PrintActivity -->|Display File Info<br/>Name, Size, Pages| PrintActivity
     
-    %% State Synchronization - Print Control
-    PrintActivity -->|16. Send State<br/>Range, Copies, Color| ApiService
-    ApiService -->|17. POST /api/state| HTTPClient
-    HTTPClient -->|18. Update State| StateManagement
-    StateManagement -->|19. Polling (3s)| DatabaseJson
-    StateManagement -->|20. Update Remote State| StateManagement
+    PrintActivity -->|Send State<br/>Range, Copies, Color| ApiService
+    ApiService -->|POST slash api slash state| HTTPClient
+    HTTPClient -->|Update State| StateManagement
+    StateManagement -->|Update Remote State| DatabaseJson
     
-    %% Printer Detection
-    PrintActivity -->|21. Load Printers| ApiService
-    ApiService -->|22. GET /api/printers| HTTPClient
-    HTTPClient -->|23. Query| PrinterAPI
-    PrinterAPI -->|24. Detect System Printers<br/>pywin32| Printer
-    Printer -->|25. Return Available<br/>Ready Printers| PrinterAPI
-    PrinterAPI -->|26. JSON Response| HTTPClient
-    HTTPClient -->|27. PrinterResponse| ApiService
-    PrintActivity -->|28. Display Printer List| PrintActivity
+    PrintActivity -->|Load Printers| ApiService
+    ApiService -->|GET slash api slash printers| HTTPClient
+    HTTPClient -->|Query| PrinterAPI
+    PrinterAPI -->|Detect System Printers| Printer
+    Printer -->|Return Available Printers| PrinterAPI
+    PrinterAPI -->|JSON Response| HTTPClient
+    HTTPClient -->|PrinterResponse| ApiService
+    PrintActivity -->|Display Printer List| PrintActivity
     
-    %% Execute Print
-    AndroidUser -->|29. Click Execute Print| PrintActivity
-    PrintActivity -->|30. Set execute=true| ApiService
-    ApiService -->|31. POST /api/state<br/>execute_print: true| HTTPClient
-    HTTPClient -->|32. Trigger Print| PrintExecution
-    PrintExecution -->|33. Load File<br/>from uploads/| UploadsDir
-    PrintExecution -->|34. Execute Print Job<br/>to Selected Printer| Printer
-    PrintExecution -->|35. Mark as Done<br/>in database.json| DatabaseJson
+    AndroidUser -->|Click Execute Print| PrintActivity
+    PrintActivity -->|Set execute true| ApiService
+    ApiService -->|POST slash api slash state| HTTPClient
+    HTTPClient -->|Trigger print| PrintExecution
+    PrintExecution -->|Load file from uploads| UploadsDir
+    PrintExecution -->|Execute Print Job| Printer
+    PrintExecution -->|Mark as Done| DatabaseJson
     
-    %% Android Polling - Print Status
-    PrintActivity -->|36. Poll State (3s)| ApiService
-    ApiService -->|37. GET /api/state| HTTPClient
-    HTTPClient -->|38. Check Status| DatabaseJson
-    DatabaseJson -->|39. Return State| HTTPClient
-    HTTPClient -->|40. RemoteStateResponse| ApiService
-    ApiService -->|41. Update UI| PrintActivity
+    PrintActivity -->|Poll State every 3s| ApiService
+    ApiService -->|GET slash api slash state| HTTPClient
+    HTTPClient -->|Check Status| DatabaseJson
+    DatabaseJson -->|Return State| HTTPClient
+    HTTPClient -->|RemoteStateResponse| ApiService
+    ApiService -->|Update UI| PrintActivity
     
-    %% Android User Flow - Chat Module
-    AndroidUser -->|42. Open Chat| ChatActivity
-    ChatActivity -->|43. Register User| ApiService
-    ApiService -->|44. POST /register| HTTPClient
-    HTTPClient -->|45. Store User ID| DatabaseJson
-    ChatActivity -->|46. Show Greeting| ChatSessionStore
-    AndroidUser -->|47. Send Message| ChatActivity
-    ChatActivity -->|48. Add to List| ChatSessionStore
+    AndroidUser -->|Open Chat| ChatActivity
+    ChatActivity -->|Register User| ApiService
+    ApiService -->|POST slash register| HTTPClient
+    HTTPClient -->|Store User ID| DatabaseJson
+    ChatActivity -->|Show Greeting| ChatSessionStore
+    AndroidUser -->|Send Message| ChatActivity
+    ChatActivity -->|Add to List| ChatSessionStore
     
-    %% Chat with Bot
-    ChatActivity -->|49. POST /api/chat<br/>ChatRequest| ApiService
-    ApiService -->|50. Send Message| HTTPClient
-    HTTPClient -->|51. Process Message| ChatEndpoint
-    ChatEndpoint -->|52. Tokenize Input| Tokenizer
-    Tokenizer -->|53. Feed to RNN| ChatBot
-    ChatBot -->|54. Generate Response<br/>Using Classes| Classes
-    ChatEndpoint -->|55. ChatResponse| HTTPClient
-    HTTPClient -->|56. Bot Reply| ApiService
-    ApiService -->|57. Show Bot Message| ChatActivity
-    ChatActivity -->|58. Store Message| ChatSessionStore
+    ChatActivity -->|POST slash api slash chat| ApiService
+    ApiService -->|Send Message| HTTPClient
+    HTTPClient -->|Process Message| ChatEndpoint
+    ChatEndpoint -->|Tokenize Input| Tokenizer
+    Tokenizer -->|Feed to RNN| ChatBotModel
+    ChatBotModel -->|Generate Response| Classes
+    ChatEndpoint -->|ChatResponse| HTTPClient
+    HTTPClient -->|Bot Reply| ApiService
+    ApiService -->|Show Bot Message| ChatActivity
+    ChatActivity -->|Store Message| ChatSessionStore
     
-    %% Chat - File Upload
-    AndroidUser -->|59. Attach PDF| ChatActivity
-    FilePicker -->|60. Pick PDF| ChatActivity
-    ChatActivity -->|61. Upload File| ApiService
-    ApiService -->|62. POST /upload| HTTPClient
-    HTTPClient -->|63. Save File| UploadsDir
-    FileProcessing -->|64. Process| FileProcessing
-    FileUpload -->|65. File Metadata| DatabaseJson
-    FileUpload -->|66. JSON Response| ApiService
-    ChatActivity -->|67. Show File Details<br/>Name, Size, Pages| ChatActivity
+    AndroidUser -->|Attach PDF| ChatActivity
+    FilePicker -->|Pick PDF| ChatActivity
+    ChatActivity -->|Upload File| ApiService
+    ApiService -->|POST slash upload| HTTPClient
+    HTTPClient -->|Save File| UploadsDir
+    FileProcessing -->|Process| FileProcessing
+    FileUpload -->|File Metadata| DatabaseJson
+    FileUpload -->|JSON Response| ApiService
+    ChatActivity -->|Show File Details| ChatActivity
     
-    %% Chat - Print Instructions
-    AndroidUser -->|68. Type Print Instructions<br/>e.g., Cetak warna| ChatActivity
-    ChatActivity -->|69. Send Instruction| ChatEndpoint
-    ChatEndpoint -->|70. Parse Instruction<br/>RNN Model| ChatBot
-    ChatBot -->|71. Update Print State<br/>Color, Pages, Copies| DatabaseJson
-    ChatBot -->|72. Trigger Print| PrintExecution
-    PrintExecution -->|73. Execute Print| Printer
-    PrintExecution -->|74. Mark Status| DatabaseJson
-    ChatActivity -->|75. Poll Print Status| ApiService
-    ApiService -->|76. GET /api/print_status| HTTPClient
-    HTTPClient -->|77. Check Status| DatabaseJson
-    DatabaseJson -->|78. Return Status: done| HTTPClient
-    ApiService -->|79. Show Success Message| ChatActivity
+    AndroidUser -->|Type Print Instructions| ChatActivity
+    ChatActivity -->|Send Instruction| ChatEndpoint
+    ChatEndpoint -->|Parse Instruction| ChatBotModel
+    ChatBotModel -->|Update Print State| DatabaseJson
+    ChatBotModel -->|Trigger Print| PrintExecution
+    PrintExecution -->|Execute Print| Printer
+    PrintExecution -->|Mark Status| DatabaseJson
+    ChatActivity -->|Poll Print Status| ApiService
+    ApiService -->|GET slash api slash print_status| HTTPClient
+    HTTPClient -->|Check Status| DatabaseJson
+    DatabaseJson -->|Return Status done| HTTPClient
+    ApiService -->|Show Success Message| ChatActivity
     
-    %% Desktop PC Operator Flow
-    PCOperator -->|80. Run desktop_app_qt.py| QtWindow
-    QtWindow -->|81. Connect to Server| FlaskApp
-    QtWindow -->|82. Load Recent Files<br/>from database.json| DatabaseJson
-    QtWindow -->|83. Select File & Options| QtWindow
-    QtWindow -->|84. Click Print| PrintExecution
-    PrintExecution -->|85. Execute Print| Printer
+    PCOperator -->|Run desktop_app_qt.py| QtWindow
+    QtWindow -->|Connect to Server| FlaskApp
+    QtWindow -->|Load Recent Files| DatabaseJson
+    QtWindow -->|Select File and Options| QtWindow
+    QtWindow -->|Click Print| PrintExecution
+    PrintExecution -->|Execute Print| Printer
     
-    %% Styling
     style User fill:#FFC107,stroke:#F57F17,stroke-width:2px,color:#000
     style AndroidApp fill:#4CAF50,stroke:#2E7D32,stroke-width:3px,color:#fff
     style PrintModule fill:#66BB6A,color:#fff
@@ -210,36 +197,36 @@ sequenceDiagram
     participant App as PrintActivity
     participant Api as ApiService
     participant Network as Flask Server
-    participant Desktop as 🖥️ PyQt5 Desktop
-    participant Printer as 🖨️ System Printer
+    participant Desktop as PyQt5 Desktop
+    participant Printer as System Printer
     
     User->>App: 1. Pilih PDF dari file
-    App->>App: 2. Load PDF & Render Preview
+    App->>App: 2. Load PDF and Render Preview
     
-    App->>Api: 3. Upload File<br/>POST /upload
+    App->>Api: 3. Upload File POST slash upload
     Api->>Network: 4. Multipart Body
-    Network->>Network: 5. Save ke uploads/<br/>Process with PyPDF2
-    Network->>Network: 6. Extract metadata<br/>pages, size, format
-    Network-->>Api: 7. UploadResponse<br/>(nama, ukuran, halaman)
+    Network->>Network: 5. Save ke uploads folder and Process with PyPDF2
+    Network->>Network: 6. Extract metadata pages, size, format
+    Network-->>Api: 7. UploadResponse nama, ukuran, halaman
     Api-->>App: 8. Display File Info
     
-    User->>App: 9. Set print options<br/>Range, Copies, Color
-    App->>Api: 10. Send State<br/>POST /api/state
+    User->>App: 9. Set print options Range, Copies, Color
+    App->>Api: 10. Send State POST slash api slash state
     Api->>Network: 11. Update database.json
     
     User->>App: 12. Klik Execute Print
-    App->>Api: 13. Send execute=true
+    App->>Api: 13. Send execute equals true
     Api->>Network: 14. Trigger print
     Network->>Desktop: 15. Signal print job ready
     
-    Desktop->>Desktop: 16. Load file from uploads/
+    Desktop->>Desktop: 16. Load file from uploads folder
     Desktop->>Printer: 17. Execute print dengan options
     Printer->>Printer: 18. Print ke printer fisik
-    Desktop->>Network: 19. Mark status: done
+    Desktop->>Network: 19. Mark status done
     
-    App->>Api: 20. Poll State (setiap 3s)
-    Api->>Network: 21. GET /api/state
-    Network-->>Api: 22. Status: done
+    App->>Api: 20. Poll State every 3s
+    Api->>Network: 21. GET slash api slash state
+    Network-->>Api: 22. Status done
     Api-->>App: 23. Show success message
 ```
 
@@ -255,31 +242,31 @@ sequenceDiagram
     participant Server as Flask Server
     participant Bot as RNN Model
     
-    User->>Chat: 1. Send Message<br/>e.g., "Cetak warna"
-    Chat->>Api: 2. POST /api/chat<br/>ChatRequest
+    User->>Chat: 1. Send Message Cetak warna
+    Chat->>Api: 2. POST slash api slash chat ChatRequest
     Api->>Server: 3. Send message
     
-    Server->>Bot: 4. Tokenize text<br/>using tokenizer.pickle
-    Bot->>Bot: 5. Feed to RNN model<br/>chatbot_rnn_model.h5
-    Bot->>Bot: 6. Generate response<br/>using classes.pickle
+    Server->>Bot: 4. Tokenize text using tokenizer.pickle
+    Bot->>Bot: 5. Feed to RNN model chatbot_rnn_model.h5
+    Bot->>Bot: 6. Generate response using classes.pickle
     
     alt Bot Detects Print Command
-        Bot->>Server: 7a. Parse print instruction<br/>Extract: color, pages, copies
-        Server->>Server: 8a. Update database.json<br/>with print settings
+        Bot->>Server: 7a. Parse print instruction Extract color, pages, copies
+        Server->>Server: 8a. Update database.json with print settings
     else Bot Sends General Response
         Bot->>Server: 7b. Generate normal response
     end
     
-    Server-->>Api: 9. ChatResponse<br/>(response text, action)
+    Server-->>Api: 9. ChatResponse response text, action
     Api-->>Chat: 10. Display bot message
     Chat->>Chat: 11. Store in ChatSessionStore
     
-    alt Action == "print_started"
+    alt Action equals print_started
         Chat->>Api: 12. Poll Print Status
-        Api->>Server: 13. GET /api/print_status
+        Api->>Server: 13. GET slash api slash print_status
         Server-->>Api: 14. Return Status
         Api-->>Chat: 15. Show print result
-    else Action == "pdf_ready"
+    else Action equals pdf_ready
         Chat->>Chat: 16. Show download button
     end
 ```
@@ -290,15 +277,15 @@ sequenceDiagram
 
 ```mermaid
 graph TD
-    Root["AplikasiSkripsi/"]
+    Root["AplikasiSkripsi slash"]
     
-    subgraph PrintServer["print_server/"]
-        AppPy["app.py<br/>Flask Application<br/>- Routes & APIs"]
+    subgraph PrintServer["print_server slash"]
+        AppPy["app.py<br/>Flask Application<br/>Routes and APIs"]
         DesktopQt["desktop_app_qt.py<br/>PyQt5 GUI"]
         TrainBot["train_chatbot.py<br/>Model Training"]
-        RunApp["run_app.py<br/>Multi-threading<br/>Flask + GUI"]
+        RunApp["run_app.py<br/>Multi-threading<br/>Flask and GUI"]
         
-        DatabaseJson["database.json<br/>State Storage<br/>files: []<br/>print_jobs: []"]
+        DatabaseJson["database.json<br/>State Storage<br/>files list<br/>print_jobs list"]
         DatasetJson["dataset_chatbot.json<br/>Training Data"]
         
         Models["Models"]
@@ -306,24 +293,24 @@ graph TD
         Tokenizer["tokenizer.pickle<br/>Word Tokenizer"]
         Classes["classes.pickle<br/>Output Classes"]
         
-        Uploads["uploads/<br/>User Uploaded PDFs"]
-        Downloads["downloads/<br/>Generated Files"]
+        Uploads["uploads slash<br/>User Uploaded PDFs"]
+        Downloads["downloads slash<br/>Generated Files"]
         
-        Requirements["requirements.txt<br/>- flask<br/>- PyPDF2<br/>- python-docx<br/>- pywin32<br/>- PyMuPDF<br/>- PyQt5"]
+        Requirements["requirements.txt<br/>flask<br/>PyPDF2<br/>python-docx<br/>pywin32<br/>PyMuPDF<br/>PyQt5"]
     end
     
-    subgraph AndroidApp["ProjekAndroid/"]
-        PrintUploader["PrintUploader/"]
+    subgraph AndroidApp["ProjekAndroid slash"]
+        PrintUploader["PrintUploader slash"]
         
-        subgraph AndroidSrc["app/src/main/"]
+        subgraph AndroidSrc["app slash src slash main slash"]
             Manifest["AndroidManifest.xml"]
-            Java["java/com/example/printuploader/"]
-            Res["res/"]
+            Java["java slash com slash example slash printuploader slash"]
+            Res["res slash"]
         end
         
         subgraph KotlinClasses["Kotlin Classes"]
             MainActivity["MainActivity.kt"]
-            PrintActivity["PrintActivity.kt<br/>PDF Preview & Control"]
+            PrintActivity["PrintActivity.kt<br/>PDF Preview and Control"]
             PrintAdapter["PrintAdapter.kt"]
             
             ChatActivity["ChatActivity.kt<br/>Chat Interface"]
@@ -335,7 +322,7 @@ graph TD
             UploadResponse["UploadResponse.kt"]
         end
         
-        BuildGradle["build.gradle<br/>Dependencies:<br/>- Retrofit<br/>- OkHttp<br/>- RecyclerView"]
+        BuildGradle["build.gradle<br/>Dependencies<br/>Retrofit<br/>OkHttp<br/>RecyclerView"]
     end
     
     Root --> PrintServer
@@ -380,8 +367,8 @@ graph TD
 
 ## 🔑 Key API Endpoints (Flask)
 
-| Endpoint | Method | Android | Purpose |
-|----------|--------|---------|---------|
+| Endpoint | Method | Android Module | Purpose |
+|----------|--------|----------------|---------|
 | `/upload` | POST | PrintActivity, ChatActivity | Upload PDF file |
 | `/api/state` | GET/POST | PrintActivity | Get/Set print state |
 | `/api/printers` | GET | PrintActivity | Get list of available printers |
@@ -425,10 +412,10 @@ graph TD
 ## 🎯 Fitur Utama Sistem
 
 ### **Android Print Module**
-- ✅ Pilih & preview PDF dari device
+- ✅ Pilih and preview PDF dari device
 - ✅ Kontrol page range (1-3, 2,4,6, dll)
 - ✅ Pengaturan jumlah copy
-- ✅ Pilih mode warna (Grayscale/Color)
+- ✅ Pilih mode warna (Grayscale slash Color)
 - ✅ Deteksi printer dari PC
 - ✅ Real-time sync state dengan desktop
 - ✅ Polling status (setiap 3 detik)
@@ -443,8 +430,8 @@ graph TD
 - ✅ Health check server (setiap 2 detik)
 
 ### **Python Backend (Flask)**
-- ✅ Multi-threading: Flask + PyQt5 GUI
-- ✅ PDF upload & metadata extraction
+- ✅ Multi-threading Flask and PyQt5 GUI
+- ✅ PDF upload and metadata extraction
 - ✅ RNN chatbot inference
 - ✅ Print queue management
 - ✅ JSON-based state storage
@@ -462,12 +449,12 @@ graph TD
 
 | Component | Technology | Purpose |
 |-----------|-----------|---------|
-| Android Frontend | Kotlin, Retrofit, OkHttp | Mobile UI & HTTP requests |
+| Android Frontend | Kotlin, Retrofit, OkHttp | Mobile UI and HTTP requests |
 | Desktop Frontend | PyQt5 | GUI for operator |
-| Web Server | Flask | REST API & request handling |
-| PDF Processing | PyPDF2, PyMuPDF, python-docx | File analysis & conversion |
-| AI Model | TensorFlow/Keras RNN | Chatbot inference |
-| System Integration | pywin32 | Printer detection & control |
+| Web Server | Flask | REST API and request handling |
+| PDF Processing | PyPDF2, PyMuPDF, python-docx | File analysis and conversion |
+| AI Model | TensorFlow slash Keras RNN | Chatbot inference |
+| System Integration | pywin32 | Printer detection and control |
 | Database | JSON file | State persistence |
 | HTTP Client | Retrofit (Android), Requests (Python) | API communication |
 
@@ -486,4 +473,3 @@ graph TD
 **Diagram ini mencakup semua aspek dari kedua aplikasi Anda secara detail!** 🎉
 
 Terakhir diperbarui: 2026-06-07
-```
