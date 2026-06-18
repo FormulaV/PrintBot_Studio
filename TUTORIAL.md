@@ -116,7 +116,7 @@ Langkah ini dilakukan untuk memasang aplikasi pengunggah dokumen (*PrintUploader
 
 1. Buka aplikasi **Android Studio** di PC Anda.
 2. Pilih menu **File > Open**, lalu arahkan ke folder project Android Anda:
-   `D:\AplikasiSkripsi\ProjekAndroid\PrintUploader`
+   `D:\PrintBot_Studio\ProjekAndroid\PrintUploader`
 3. Tunggu hingga proses *Gradle Sync* dan indeksasi selesai (pastikan PC Anda terhubung ke internet karena Android Studio akan mengunduh dependensi Gradle).
 4. Aktifkan mode **Developer Options** dan **USB Debugging** pada handphone Android Anda, lalu sambungkan handphone ke PC menggunakan kabel data.
 5. Pada bagian atas Android Studio, pilih perangkat handphone Anda dan klik tombol **Run** (ikon segitiga hijau ⏵).
