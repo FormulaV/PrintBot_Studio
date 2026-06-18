@@ -110,16 +110,30 @@ Aplikasi GUI **PrintBot Studio - Operator** akan terbuka di layar desktop Anda. 
 
 ---
 
-## Langkah 3: Build dan Install Aplikasi Android (Client)
+## Langkah 3: Instalasi Aplikasi Android (Client)
 
-Langkah ini dilakukan untuk memasang aplikasi pengunggah dokumen (*PrintUploader*) ke handphone pengguna.
+Langkah ini dilakukan untuk memasang aplikasi pengunggah dokumen (**PrintUploader**) ke handphone pengguna/mahasiswa.
+
+### Metode Utama: Instalasi Cepat via QR Code
+Untuk kemudahan instalasi tanpa harus membangun (*build*) ulang source code, Anda cukup memindai QR Code di bawah ini langsung dari HP Android Anda:
+
+![QR Code Download Aplikasi](./qrcode.png)
+
+1. Pindai (scan) **QR Code** di atas menggunakan Google Lens, Kamera HP, atau aplikasi pemindai QR lainnya.
+2. Unduh file APK (**PrintUploader.apk**) dari tautan yang muncul.
+3. Buka file APK yang telah diunduh, lalu lakukan instalasi.
+   *(Jika muncul peringatan dari sistem Android mengenai instalasi dari sumber tidak dikenal, pilih "Izinkan" atau "Tetap Instal").*
+
+---
+
+### Metode Alternatif (Khusus Pengembang / Developer):
+Jika Anda ingin memodifikasi source code atau melakukan build manual dari Android Studio, ikuti langkah berikut:
 
 1. Buka aplikasi **Android Studio** di PC Anda.
-2. Pilih menu **File > Open**, lalu arahkan ke folder project Android Anda:
-   `D:\PrintBot_Studio\ProjekAndroid\PrintUploader`
-3. Tunggu hingga proses *Gradle Sync* dan indeksasi selesai (pastikan PC Anda terhubung ke internet karena Android Studio akan mengunduh dependensi Gradle).
-4. Aktifkan mode **Developer Options** dan **USB Debugging** pada handphone Android Anda, lalu sambungkan handphone ke PC menggunakan kabel data.
-5. Pada bagian atas Android Studio, pilih perangkat handphone Anda dan klik tombol **Run** (ikon segitiga hijau ⏵).
+2. Pilih menu **File > Open**, lalu arahkan ke `D:\PrintBot_Studio\ProjekAndroid\PrintUploader`
+3. Tunggu hingga proses *Gradle Sync* selesai (pastikan PC terhubung ke internet).
+4. Aktifkan mode **Developer Options** dan **USB Debugging** pada HP Android Anda, lalu sambungkan HP ke PC via kabel USB.
+5. Pada Android Studio, pilih perangkat HP Anda dan klik tombol **Run** (ikon segitiga hijau ⏵).
 6. Aplikasi akan terinstal otomatis di handphone dengan nama **PrintUploader**.
 
 ---
