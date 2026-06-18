@@ -63,6 +63,7 @@ class PrintActivity : AppCompatActivity() {
     private var copies = 1
     private var colorMode = "Grayscale"
     private var isProgrammaticColorSelection = false
+    private var isProgrammaticPrinterSelection = false
     private val colorOptions = listOf("Grayscale", "Color")
 
     private val statePollHandler = Handler(Looper.getMainLooper())
@@ -119,6 +120,23 @@ class PrintActivity : AppCompatActivity() {
                 if (selected != colorMode) {
                     colorMode = selected
                     sendRemoteState(execute = false)
+                }
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        spPrinter.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+                if (isProgrammaticPrinterSelection) {
+                    isProgrammaticPrinterSelection = false
+                    return
+                }
+                if (position in printerNames.indices) {
+                    val selected = printerNames[position]
+                    if (selected != selectedPrinter) {
+                        selectedPrinter = selected
+                        sendRemoteState(execute = false)
+                    }
                 }
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -203,7 +221,8 @@ class PrintActivity : AppCompatActivity() {
 
                 selectedPrinter = res?.selected_printer ?: ""
                 val selectedIndex = printerNames.indexOf(selectedPrinter)
-                if (selectedIndex >= 0) {
+                if (selectedIndex >= 0 && selectedIndex != spPrinter.selectedItemPosition) {
+                    isProgrammaticPrinterSelection = true
                     spPrinter.setSelection(selectedIndex)
                 }
             }
@@ -328,13 +347,19 @@ class PrintActivity : AppCompatActivity() {
             user_id = userId
         )
 
-        apiService.updateState(request).enqueue(object : Callback<Map<String, Any>> {
-            override fun onResponse(call: Call<Map<String, Any>>, response: Response<Map<String, Any>>) {
+        apiService.updateState(request).enqueue(object : Callback<UpdateStateResponse> {
+            override fun onResponse(call: Call<UpdateStateResponse>, response: Response<UpdateStateResponse>) {
+                if (response.isSuccessful) {
+                    val res = response.body()
+                    res?.state?.let { serverState ->
+                        lastStateCommandId = serverState.command_id
+                    }
+                }
                 if (execute) {
                     Toast.makeText(this@PrintActivity, "Memerintahkan PC untuk Cetak...", Toast.LENGTH_LONG).show()
                 }
             }
-            override fun onFailure(call: Call<Map<String, Any>>, t: Throwable) {
+            override fun onFailure(call: Call<UpdateStateResponse>, t: Throwable) {
                 Toast.makeText(this@PrintActivity, "Koneksi terputus: ${t.message}", Toast.LENGTH_SHORT).show()
             }
         })
@@ -601,7 +626,8 @@ class PrintActivity : AppCompatActivity() {
                     state.printer_name?.let { pName ->
                         if (pName.isNotEmpty() && printerNames.isNotEmpty()) {
                             val index = printerNames.indexOf(pName)
-                            if (index >= 0) {
+                            if (index >= 0 && index != spPrinter.selectedItemPosition) {
+                                isProgrammaticPrinterSelection = true
                                 spPrinter.setSelection(index)
                             }
                         }
@@ -613,7 +639,7 @@ class PrintActivity : AppCompatActivity() {
                         if (cMode.isNotEmpty() && cMode != colorMode) {
                             colorMode = cMode
                             val index = colorOptions.indexOf(cMode)
-                            if (index >= 0) {
+                            if (index >= 0 && index != spColorMode.selectedItemPosition) {
                                 isProgrammaticColorSelection = true
                                 spColorMode.setSelection(index)
                             }
@@ -686,7 +712,7 @@ class PrintActivity : AppCompatActivity() {
                 
                 colorMode = remoteState.color_mode ?: "Grayscale"
                 val colorIndex = colorOptions.indexOf(colorMode)
-                if (colorIndex >= 0) {
+                if (colorIndex >= 0 && colorIndex != spColorMode.selectedItemPosition) {
                     isProgrammaticColorSelection = true
                     spColorMode.setSelection(colorIndex)
                 }
@@ -701,8 +727,10 @@ class PrintActivity : AppCompatActivity() {
                 etCopies.setText("1")
                 
                 colorMode = "Grayscale"
-                isProgrammaticColorSelection = true
-                spColorMode.setSelection(0)
+                if (spColorMode.selectedItemPosition != 0) {
+                    isProgrammaticColorSelection = true
+                    spColorMode.setSelection(0)
+                }
             }
 
             renderPdfPage(currentPage)
@@ -725,7 +753,8 @@ class PrintActivity : AppCompatActivity() {
             remoteState?.printer_name?.let { pName ->
                 if (pName.isNotEmpty() && printerNames.isNotEmpty()) {
                     val index = printerNames.indexOf(pName)
-                    if (index >= 0) {
+                    if (index >= 0 && index != spPrinter.selectedItemPosition) {
+                        isProgrammaticPrinterSelection = true
                         spPrinter.setSelection(index)
                     }
                 }

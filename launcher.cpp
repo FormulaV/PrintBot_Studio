@@ -13,6 +13,13 @@ bool FileExists(const std::wstring& path) {
            !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 }
 
+// Helper to check if a directory exists
+bool DirectoryExists(const std::wstring& path) {
+    DWORD dwAttrib = GetFileAttributesW(path.c_str());
+    return (dwAttrib != INVALID_FILE_ATTRIBUTES && 
+           (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+}
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     // 1. Get executable path to set directory
     wchar_t exePath[MAX_PATH];
@@ -70,9 +77,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     std::wstring chosenPython = pythonExe; // Fallback to PATH search
     for (const auto& path : searchPaths) {
         if (FileExists(path)) {
+            // Verify if the virtual environment actually has flask installed
+            std::wstring libPath = path;
+            size_t scriptsPos = libPath.find(L"\\Scripts\\");
+            if (scriptsPos != std::wstring::npos) {
+                libPath = libPath.substr(0, scriptsPos) + L"\\Lib\\site-packages\\flask";
+                if (!DirectoryExists(libPath)) {
+                    if (debugMode) {
+                        std::wcout << L"Found local virtual environment Python at " << path << L" but it lacks flask. Skipping...\n";
+                    }
+                    continue;
+                }
+            }
             chosenPython = L".\\" + path;
             if (debugMode) {
-                std::wcout << L"Found local virtual environment Python: " << chosenPython << L"\n";
+                std::wcout << L"Found valid local virtual environment Python: " << chosenPython << L"\n";
             }
             break;
         }
@@ -89,11 +108,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
     
     // 5. Build command line string: "python_exe" "print_server\run_app.py"
-    // We quote paths to be safe.
-    std::wstring cmdLine = L"\"" + chosenPython + L"\" \"" + scriptPath + L"\"";
+    // We only quote the executable if it contains directory slashes (to support system path lookups safely)
+    std::wstring cmdLine;
+    if (chosenPython.find(L"\\") != std::wstring::npos) {
+        cmdLine = L"\"" + chosenPython + L"\" \"" + scriptPath + L"\"";
+    } else {
+        cmdLine = chosenPython + L" \"" + scriptPath + L"\"";
+    }
     
     if (debugMode) {
-        std::wcout << L"Executing: " << cmdLine << L"\n";
+        std::wcout << L"Executing Command: " << cmdLine << L"\n";
     }
     
     // 6. Launch the Python process

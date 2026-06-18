@@ -16,11 +16,21 @@ import tensorflow as tf
 
 try:
     import win32print
+    import win32api
 except Exception:
     win32print = None
+    win32api = None
 
 
 import sys
+
+# Initialize QApplication for PyQt5 printing support
+try:
+    from PyQt5.QtWidgets import QApplication
+    qt_app = QApplication.instance() or QApplication(sys.argv)
+except Exception as exc:
+    print(f"Gagal inisialisasi Qt: {exc}")
+    qt_app = None
 
 if getattr(sys, 'frozen', False):
     BUNDLE_DIR = Path(sys._MEIPASS)
@@ -989,6 +999,136 @@ def build_instruction_summary(instructions, pending_print):
     )
 
 
+def execute_pdf_print(file_info, instructions):
+    if not file_info:
+        return False, "Tidak ada file untuk dicetak."
+
+    printer_name = instructions.get("printer_name") or default_printer()
+    if not printer_name:
+        return False, "Printer belum terpilih."
+
+    # Check if printer is ready
+    ready, reason = printer_is_ready(printer_name)
+    if not ready:
+        return False, f"Printer tidak siap: {reason}"
+
+    # Get physical file path
+    file_name = file_info["nama_file"]
+    abs_filepath = UPLOAD_FOLDER / file_name
+    if not abs_filepath.exists():
+        return False, f"File fisik tidak ditemukan: {abs_filepath}"
+
+    try:
+        jenis = str(file_info.get("jenis_file", "")).lower()
+        if jenis == "pdf":
+            # Headless Qt5 Printing
+            from PyQt5.QtPrintSupport import QPrinter
+            from PyQt5.QtGui import QPainter, QImage
+            from PyQt5.QtCore import Qt
+            import fitz
+
+            printer = QPrinter(QPrinter.HighResolution)
+            printer.setPrinterName(printer_name)
+
+            copies = int(instructions.get("copies", 1))
+            printer.setCopyCount(max(1, copies))
+
+            color_mode = str(instructions.get("color_mode", "Grayscale")).lower()
+            if color_mode == "color":
+                printer.setColorMode(QPrinter.Color)
+            else:
+                printer.setColorMode(QPrinter.GrayScale)
+
+            kertas = file_info.get("ukuran_kertas", "")
+            if kertas == "Legal":
+                printer.setPageSize(QPrinter.Legal)
+            elif kertas == "Letter":
+                printer.setPageSize(QPrinter.Letter)
+            elif kertas == "A4":
+                printer.setPageSize(QPrinter.A4)
+
+            # Open document
+            doc = fitz.open(str(abs_filepath))
+
+            # Resolve pages to print
+            page_text = instructions.get("pages", "Semua halaman")
+            pages_to_print = resolve_page_indices(page_text, file_info)
+
+            painter = QPainter()
+            if not painter.begin(printer):
+                doc.close()
+                return False, "Gagal memulai QPainter pada printer."
+
+            for idx, page_idx in enumerate(pages_to_print):
+                if 0 <= page_idx < len(doc):
+                    page = doc.load_page(page_idx)
+                    zoom = 4
+                    mat = fitz.Matrix(zoom, zoom)
+                    pix = page.get_pixmap(matrix=mat)
+
+                    fmt = QImage.Format_RGBA8888 if pix.alpha else QImage.Format_RGB888
+                    qimg = QImage(pix.samples, pix.width, pix.height, pix.stride, fmt)
+
+                    rect = painter.viewport()
+                    size = qimg.size()
+                    size.scale(rect.size(), Qt.KeepAspectRatio)
+
+                    painter.setViewport(rect.x(), rect.y(), size.width(), size.height())
+                    painter.setWindow(qimg.rect())
+
+                    painter.drawImage(0, 0, qimg)
+
+                    if idx < len(pages_to_print) - 1:
+                        printer.newPage()
+
+            painter.end()
+            doc.close()
+            return True, f"Halaman {','.join(str(x+1) for x in pages_to_print)} berhasil dicetak."
+
+        else:
+            # Non-PDF files (e.g. docx)
+            if win32print is None or win32api is None:
+                return False, "Modul win32print tidak tersedia."
+            win32print.SetDefaultPrinter(printer_name)
+            win32api.ShellExecute(0, "printto", str(abs_filepath), f'"{printer_name}"', ".", 0)
+            return True, "Cetak non-PDF sedang diproses oleh Windows."
+
+    except Exception as e:
+        return False, f"Gagal mencetak: {str(e)}"
+
+
+def trigger_print(session):
+    remote_state = session["remote_state"]
+    pending_print = session["pending_print"]
+    
+    # Set execute_print to False immediately to clear trigger
+    remote_state["execute_print"] = False
+    
+    file_info = pending_print["file"] or latest_file_document()
+    
+    session["print_status"].update({
+        "status": "printing",
+        "message": "Mencetak dokumen di server...",
+        "printer_name": remote_state["printer_name"],
+        "command_id": remote_state["command_id"],
+        "updated_at": now_text(),
+    })
+    
+    def run_background_print():
+        success, msg = execute_pdf_print(file_info, pending_print["instructions"])
+        status = "done" if success else "error"
+        session["print_status"].update({
+            "status": status,
+            "message": msg,
+            "printer_name": remote_state["printer_name"],
+            "command_id": remote_state["command_id"],
+            "updated_at": now_text(),
+        })
+        print(f"Background print finished: status={status}, message={msg}")
+        
+    threading.Thread(target=run_background_print, daemon=True).start()
+
+
 def fallback_chat_response(user_message):
     if bot_model is None or bot_tokenizer is None:
         return "Model chatbot belum siap. Jalankan train_chatbot.py terlebih dahulu."
@@ -1279,14 +1419,25 @@ def update_state():
             
     remote_state["command_id"] += 1
 
+    pending_print = session["pending_print"]
+    if not pending_print["instructions"]:
+        pending_print["instructions"] = {
+            "color_mode": "Grayscale",
+            "pages": "Semua halaman",
+            "copies": 1,
+            "duplex": "Tidak",
+            "paper": "Sesuai dokumen",
+            "quality": "Standar",
+            "printer_name": remote_state.get("printer_name") or default_printer(),
+        }
+    pending_print["instructions"]["printer_name"] = remote_state["printer_name"]
+    pending_print["instructions"]["color_mode"] = remote_state["color_mode"]
+    pending_print["instructions"]["copies"] = remote_state["copies"]
+    pending_print["instructions"]["pages"] = remote_state["pages"]
+    pending_print["summary"] = build_instruction_summary(pending_print["instructions"], pending_print)
+
     if remote_state["execute_print"]:
-        session["print_status"].update({
-            "status": "printing",
-            "message": "Perintah cetak dikirim ke PC.",
-            "printer_name": remote_state["printer_name"],
-            "command_id": remote_state["command_id"],
-            "updated_at": now_text(),
-        })
+        trigger_print(session)
 
     return jsonify({"status": "success", "state": remote_state})
 
@@ -1545,15 +1696,9 @@ def chat():
             remote_state["copies"] = int(instructions.get("copies", 1))
             remote_state["command_id"] += 1
 
-            session["print_status"].update({
-                "status": "printing",
-                "message": "Perintah cetak dikirim ke PC.",
-                "printer_name": remote_state["printer_name"],
-                "command_id": remote_state["command_id"],
-                "updated_at": now_text(),
-            })
-
             pending_print["awaiting_confirmation"] = False
+
+            trigger_print(session)
 
             return chat_reply(user_id, user_message, {
                 "response": "Baiklah kak mohon tunggu yaa, akan segera kami lakukan pencetakan",

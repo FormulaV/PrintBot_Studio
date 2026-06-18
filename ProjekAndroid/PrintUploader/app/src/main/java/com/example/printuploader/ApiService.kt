@@ -64,6 +64,11 @@ data class RemoteStateResponse(
     val command_id: Int
 )
 
+data class UpdateStateResponse(
+    val status: String,
+    val state: RemoteStateResponse
+)
+
 data class FileMetadataResponse(
     val id: Int?,
     val nama_file: String?,
@@ -93,7 +98,7 @@ interface ApiService {
     fun checkServer(@Query("user_id") userId: String?): Call<Map<String, String>>
 
     @POST("/update_state")
-    fun updateState(@Body request: StateRequest): Call<Map<String, Any>>
+    fun updateState(@Body request: StateRequest): Call<UpdateStateResponse>
 
     @POST("/chat")
     fun sendMessageToBot(@Body request: ChatRequest): Call<ChatResponse>
