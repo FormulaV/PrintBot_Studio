@@ -830,6 +830,7 @@ def sync_instructions_to_state(user_id, instructions, file_info):
     remote_state["printer_name"] = instructions.get("printer_name", "") or remote_state.get("printer_name", "") or default_printer()
     remote_state["color_mode"] = instructions.get("color_mode", "Grayscale")
     remote_state["copies"] = int(instructions.get("copies", 1))
+    remote_state["execute_print"] = False
     remote_state["command_id"] += 1
 
 
@@ -1348,6 +1349,7 @@ def print_finished():
         "command_id": int(data.get("command_id", session["remote_state"].get("command_id", 0))),
         "updated_at": now_text(),
     })
+    session["remote_state"]["execute_print"] = False
     return jsonify({"status": "success", "print_status": session["print_status"]})
 
 

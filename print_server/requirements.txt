@@ -4,3 +4,6 @@ python-docx
 pywin32
 PyMuPDF
 PyQt5
+requests
+numpy
+tensorflow
