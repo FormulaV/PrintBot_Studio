@@ -1,4 +1,4 @@
-# AplikasiSkripsi
+# PrintBot_Studio
 
 Repository ini berisi seluruh projek Aplikasi Skripsi, termasuk:
 1. **ProjekAndroid/PrintUploader**: Aplikasi Android untuk mengunggah dokumen/file yang akan dicetak.
