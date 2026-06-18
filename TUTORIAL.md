@@ -1,4 +1,4 @@
-# Panduan Lengkap: Kloning, Instalasi, dan Penggunaan Cetakin (Aplikasi Skripsi)
+# Panduan Lengkap: Kloning, Instalasi, dan Penggunaan Cetakin (PrintBot Studio)
 
 Dokumen ini menjelaskan langkah-langkah lengkap untuk menyiapkan dan menjalankan sistem **Cetakin** dari awal. Sistem ini terdiri dari dua komponen utama:
 1. **Desktop Print Server** (Flask Web Server + PyQt5 GUI + RNN Chatbot) yang berjalan di PC/Laptop operator.
