@@ -40,7 +40,7 @@ Sebelum memulai, pastikan PC/Laptop dan Handphone Anda memiliki *software* berik
    ```
 3. Jalankan perintah `git clone` untuk mengunduh source code project:
    ```cmd
-   git clone https://github.com/FormulaV/AplikasiSkripsi.git
+   git clone https://github.com/FormulaV/PrintBot_Studio.git
    ```
 4. Setelah selesai, masuk ke dalam folder hasil kloning:
    ```cmd
