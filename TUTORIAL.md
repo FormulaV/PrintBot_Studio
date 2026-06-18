@@ -44,7 +44,7 @@ Sebelum memulai, pastikan PC/Laptop dan Handphone Anda memiliki *software* berik
    ```
 4. Setelah selesai, masuk ke dalam folder hasil kloning:
    ```cmd
-   cd AplikasiSkripsi
+   cd PrintBot_Studio
    ```
 
 ---
