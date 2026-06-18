@@ -93,7 +93,7 @@ Karena print server menggunakan modul native Windows API untuk berkomunikasi lan
 python venv\Scripts\pywin32_postinstall.py -install
 ```
 
-### 2.5. Melatih Model AI Chatbot (Wajib)
+### 2.5. Melatih Model AI Chatbot (Wajib apabila tidak memiliki model .h5)
 Sebelum server Flask dijalankan untuk pertama kali, Anda harus melatih (*training*) model chatbot berbasis RNN agar chatbot bisa mengenali intent teks/pesan dari HP.
 Jalankan skrip training berikut:
 ```cmd
